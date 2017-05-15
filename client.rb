@@ -13,7 +13,7 @@ end
 
 enable :sessions
 
-$knownIdentities = {}
+$aat = {}
 $umaServer = 'http://testservice.gnu:4567'
 $client_id = "random_client_id"
 $client_secret = "lksajr327048olkxjf075342jldsau0958lkjds"
@@ -26,11 +26,6 @@ get '/logout' do
   return "Not logged in"
 end
 
-def getUser(identity)
-  return nil if identity.nil? or $knownIdentities[identity].nil?
-  return $knownIdentities[identity]["full_name"] unless $knownIdentities[identity]["full_name"].nil?
-  return $knownIdentities[identity]["sub"]
-end
 
 get '/' do
   #Step #1
@@ -38,7 +33,7 @@ get '/' do
   p identity
 
   if (!identity.nil?)
-    token = $knownIdentities[identity] #AAT
+    token = $aat[identity] #AAT
     #if (is_token_expired (token))
     #  # Token is expired
     #  redirect "/login"
@@ -55,18 +50,10 @@ end
 #callback URL
 get "/cb" do
     #Step #9
+    identity = session["user"]
     code = params['code']
-    p code
-    # POST /token HTTP/1.1
-    # Host: server.example.com
-    # Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
-    # Content-Type: application/x-www-form-urlencoded
-#
-#     grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA
-#     &redirect_uri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb
-
+    
     encoded_authorization = ["#{$client_id}:#{$client_secret}"].pack('m').delete("\r\n")
-    puts "user pass #{$client_id} #{$client_secret}"
     r = RestClient::Request.execute(method: :post,
                                     url: 'http://testservice.gnu:4567/token',
                                     verify_ssl: false,
@@ -75,7 +62,7 @@ get "/cb" do
                                     headers: {Authorization: 'Basic #{encoded_authorization}',
                                       content_type: 'json', params: {grant_type: 'authorization_code',code: code, redirect_uri: 'http%3A%2F%2Fexample%2Egnu%2Fcb'}})
     response_body = JSON.parse(r.body)
-    puts "response aat #{response_body["access_token"]}"
+    $aat[identity]=response_body["access_token"]
 
 
 
